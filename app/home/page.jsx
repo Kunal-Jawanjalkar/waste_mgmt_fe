@@ -1,107 +1,103 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
 import React from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { WasteAnalytics } from "./components/WasteAnalyticsCards";
+import WasteRequestCard from "./components/WasteRequestCard";
+import { useLocalStorage } from "../hooks";
+import RecentRequestsTable from "./components/RecentRequests";
+import { wasteCollectionApi } from "../api";
+import { useToast } from "@/components/ui/use-toast";
 
 const Home = () => {
+  const { toast } = useToast();
+  const router = useRouter();
+  const [userDetails, setUserDetails] = useLocalStorage("userDetails", null);
+  const [token, setToken] = useLocalStorage("token", null);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState({ isRecentRequestsLoading: false });
+  const [paginationConfig, setPaginationConfig] = useState({
+    page: 1,
+    limit: 10,
+    count: null,
+  });
+  const fetchRecentRequests = async (page = 1, limit = 10, userId) => {
+    try {
+      setLoading({ ...loading, isRecentRequestsLoading: true });
+      const response = await wasteCollectionApi.getAllWasteCollections({
+        page,
+        limit,
+        userId,
+      });
+      if (response.status === 200) {
+        setRequests(response.data.data);
+        setPaginationConfig({
+          page: response.data.page,
+          limit: response.data.limit,
+          count: response.data.count,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: error.message,
+      });
+      setLoading({ ...loading, isRecentRequestsLoading: false });
+    } finally {
+      setLoading({ ...loading, isRecentRequestsLoading: false });
+    }
+  };
+  useEffect(() => {
+    if (!router || !token) return;
+    if (!token) {
+      router.push("/login");
+    }
+  }, [token, router]);
+  const userData = JSON.parse(userDetails);
+
+  useEffect(() => {
+    if (!userData?.id || userData?.role !== "USER") return;
+    fetchRecentRequests(
+      paginationConfig.page,
+      paginationConfig.limit,
+      userData?.id
+    );
+  }, [userData?.id]);
+
+  if (!userData?.role) {
+    return <> </>;
+  }
+
   return (
     <main className="container pt-6">
-      <h1 className="text-center mb-6 font-bold text-xl">Requests Analysis</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Requests
-            </CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1, 123</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Requests
-            </CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2350</div>
-            <p className="text-xs text-muted-foreground"></p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Requests Completed
-            </CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <rect width="20" height="14" x="2" y="5" rx="2" />
-              <path d="M2 10h20" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+2,234</div>
-          </CardContent>
-        </Card>
-        <Link href="/map">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Now</CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-              </svg>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">+573</div>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
+      <h1 className="text-center mb-6 font-bold text-xl">
+        {userData?.role !== "USER" && "Waste Collection Analysis"}
+      </h1>
+      {userData?.role !== "USER" ? (
+        <WasteAnalytics />
+      ) : (
+        <WasteRequestCard
+          fetchRecentRequests={fetchRecentRequests}
+          paginationConfig={paginationConfig}
+          userId={userData?.id}
+        />
+      )}
+
+      {userData?.role !== "USER" ? (
+        " "
+      ) : (
+        <>
+          <h1 className="mt-10">Your Recent Orders</h1>
+          <RecentRequestsTable
+            fetchRecentRequests={fetchRecentRequests}
+            requests={requests}
+            setRequests={setRequests}
+            isRecentRequestsLoading={loading.isRecentRequestsLoading}
+            paginationConfig={paginationConfig}
+            setPaginationConfig={setPaginationConfig}
+          />
+        </>
+      )}
     </main>
   );
 };

@@ -1,6 +1,5 @@
 "use client";
-import { useState } from "react";
-import { CircleMarker, MapContainer, Marker, Popup, TileLayer, Tooltip } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
@@ -23,12 +22,19 @@ const Map = ({ markerPositions, position, zoom }) => {
         />
         {markerPositions.map((markerData, index) => {
           return (
-            <Marker position={markerData.position} key={index}>
+            <Marker
+              position={markerData.position}
+              key={index}
+              onClick={() => {
+                console.log(e);
+              }}
+            >
               <Tooltip>{markerData.tooltipContent}</Tooltip>
+              <Popup>{markerData.popupContent}</Popup>
             </Marker>
           );
         })}
-        <MapMouseCoordinates />
+        <MapMouseCoordinates className="fixed z-[999] top-2 left-[50%]" />
       </MapContainer>
     </>
   );

@@ -5,12 +5,10 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
 import Image from "next/image";
-
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,13 +18,16 @@ import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
+import { authApi } from "../api";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { useLocalStorage } from "../hooks";
 
 const formSchema = z.object({
   email: z
@@ -39,14 +40,38 @@ const formSchema = z.object({
 });
 
 const LoginForm = () => {
+  const { toast } = useToast();
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(formSchema),
+    defaultValues: { email: "", password: "" },
   });
-
-  const onSubmit = (values) => {
-    console.log("form values", values);
-    router.push("/home");
+  const [loading, setLoading] = useState({ isLoginLoading: false });
+  const [userDetails, setUserDetails] = useLocalStorage("userDetails", null);
+  const [token, setToken] = useLocalStorage("token", null);
+  const onSubmit = async (values) => {
+    try {
+      setLoading({ ...loading, isLoginLoading: true });
+      const payload = {
+        email: values.email,
+        password: values.password,
+      };
+      const response = await authApi.login(payload);
+      if (response.status === 201) {
+        form.reset();
+        router.push("/home");
+        setToken(response.data.access_token);
+        setUserDetails(JSON.stringify(response.data.userDetails));
+      }
+      setLoading({ ...loading, isLoginLoading: false });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: error.response.data.message,
+      });
+    } finally {
+      setLoading({ ...loading, isLoginLoading: false });
+    }
   };
 
   return (
@@ -54,7 +79,7 @@ const LoginForm = () => {
       <h1 className="text-center font-extrabold text-2xl">
         SMART WASTE MANAGEMENT
       </h1>
-      <Card className="w-[85%] md:w-[30%] mt-4 mx-auto shadow-lg border-0">
+      <Card className="w-[85%] md:w-[30%] mt-4 mx-auto shadow-lg border-0 bg-slate-100">
         <CardHeader>
           <CardTitle>Login</CardTitle>
         </CardHeader>
@@ -107,9 +132,21 @@ const LoginForm = () => {
           <Link href={"/register"} className="text-sm">
             New? Click here to register
           </Link>
-          <Button type="submit" form="login_form">
+          <Button
+            type="submit"
+            form="login_form"
+            disabled={loading.isLoginLoading}
+          >
+            {loading.isLoginLoading && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
             Login
           </Button>
+        </CardFooter>
+        <CardFooter className="flex justify-between">
+          <Link href={"/"} className="text-sm">
+            Back to Homepage
+          </Link>
         </CardFooter>
       </Card>
       <Image

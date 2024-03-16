@@ -3,10 +3,15 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLocalStorage } from "@/app/hooks";
 
 export default function Sidebar({ children }) {
   const [open, setOpen] = React.useState(false);
+  const [userDetails, setUserDetails] = useLocalStorage("userDetails", null);
   const pathname = usePathname();
+
+  const userData = JSON.parse(userDetails);
+
   return (
     <div className="flex">
       <div
@@ -63,35 +68,42 @@ export default function Sidebar({ children }) {
                   <span className="text-gray-100">Home</span>
                 </Link>
               </li>
-              <li
-                className={`rounded-sm ${pathname === "/map" && "bg-gray-700"}`}
-              >
-                <Link
-                  href="/map"
-                  className="flex items-center p-2.5 space-x-3 rounded-md"
+              {userData?.role !== "USER" && (
+                <li
+                  className={`rounded-sm ${
+                    pathname === "/map" && "bg-gray-700"
+                  }`}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="lucide lucide-map w-6 h-6 text-gray-100"
+                  <Link
+                    href="/map"
+                    className="flex items-center p-2.5 space-x-3 rounded-md"
                   >
-                    <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
-                    <line x1="9" x2="9" y1="3" y2="18" />
-                    <line x1="15" x2="15" y1="6" y2="21" />
-                  </svg>
-                  <span className="text-gray-100">Collection Requests</span>
-                </Link>
-              </li>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-map w-6 h-6 text-gray-100"
+                    >
+                      <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+                      <line x1="9" x2="9" y1="3" y2="18" />
+                      <line x1="15" x2="15" y1="6" y2="21" />
+                    </svg>
+                    <span className="text-gray-100">Collection Orders</span>
+                  </Link>
+                </li>
+              )}
 
               <li className="rounded-sm">
                 <Link
+                  onClick={() => {
+                    localStorage.clear("token");
+                  }}
                   href="/"
                   className="flex items-center p-2 space-x-3 rounded-md"
                 >
