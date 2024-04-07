@@ -4,9 +4,16 @@ import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { useEffect } from "react";
 import { useLocalStorage } from "../hooks";
-import { wasteCollectionApi } from "../api";
+import { userApi, wasteCollectionApi } from "../api";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import trashGreen from "@/public/trashgreen.svg";
+import trashYellow from "@/public/trashyellow.svg";
+import trashRed from "@/public/trashred.svg";
+import trashBlack from "@/public/trashblack.svg";
+
+import Image from "next/image";
+import dayjs from "dayjs";
 
 const MapPage = () => {
   const Map = useMemo(
@@ -29,7 +36,7 @@ const MapPage = () => {
   }, [token, router]);
 
   const [requests, setRequests] = useState([]);
-  const [userDetails, setUserDetails] = useLocalStorage("userDetails", null);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState({
     isRecentRequestsLoading: false,
     isUpdateWasteLoading: false,
@@ -67,8 +74,26 @@ const MapPage = () => {
     }
   };
 
+  const getAllUsers = async (page = 1, limit = 10) => {
+    try {
+      setLoading({ ...loading, isRecentRequestsLoading: true });
+      const response = await userApi.getAll();
+      if (response.status === 200) {
+        setAllUsers(response.data);
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: error.message,
+      });
+      setLoading({ ...loading, isRecentRequestsLoading: false });
+    } finally {
+      setLoading({ ...loading, isRecentRequestsLoading: false });
+    }
+  };
+
   useEffect(() => {
-    fetchRecentRequests(paginationConfig.page, paginationConfig.limit);
+    getAllUsers();
   }, []);
 
   const updateWasteCollection = async (id, payload) => {
@@ -79,7 +104,7 @@ const MapPage = () => {
         payload
       );
       if (response.status === 200) {
-        fetchRecentRequests(paginationConfig.page, paginationConfig.limit);
+        getAllUsers();
         alert("Order completed successfully");
       }
     } catch (error) {
@@ -93,28 +118,85 @@ const MapPage = () => {
     }
   };
 
-  const markerPositions = requests.map((req) => {
+  const markerPositions = allUsers.map((user) => {
+    let amount = 0;
+    user.wasteCollections.forEach((req) => {
+      amount += req.amount;
+    });
+    const wasteCollectionId = user.wasteCollections[0]?.id;
+    const wasteCollection = user.wasteCollections;
+
     return {
       tooltipContent: (
         <>
-          <strong>{`${req.wasteType.name} waste order by - ${req.user.name}`}</strong>
-          <h1>{`${req.user.address}`}</h1>
+          {wasteCollection.length > 0 && (
+            <h2 className="text-center">
+              {" "}
+              status: {wasteCollection[0]?.status}
+            </h2>
+          )}
+          <div className="flex justify-center">
+            {(wasteCollection.length === 0 || amount <= 50) && (
+              <Image src={trashGreen} alt="trash-can" />
+            )}
+
+            {amount >= 50 && amount <= 80 && (
+              <Image src={trashYellow} alt="trash-can" />
+            )}
+
+            {amount >= 80 && <Image src={trashRed} alt="trash-can" />}
+          </div>
+          <div className="flex justify-center">{amount || 0} %</div>
+
+          {wasteCollection.length === 0 ? (
+            <strong> No recent orders by - {user.name}</strong>
+          ) : (
+            <strong>{`${user.wasteCollections[0]?.wasteType?.name} waste order by - ${user.name}`}</strong>
+          )}
+          <h1>{`${user.address}`}</h1>
+          <p>
+            {amount <= 15 && (
+              <span>
+                Expected time for the dustbin to be full{" "}
+                <strong> {dayjs().add(7, "day").format("DD MMM YYYY")}</strong>
+              </span>
+            )}
+            {amount > 15 && amount <= 30 && (
+              <span>
+                Expected time for the dustbin to be full{" "}
+                <strong> {dayjs().add(5, "day").format("DD MMM YYYY")}</strong>
+              </span>
+            )}
+            {amount > 30 && amount <= 50 && (
+              <span>
+                Expected time for the dustbin to be full{" "}
+                <strong> {dayjs().add(3, "day").format("DD MMM YYYY")}</strong>
+              </span>
+            )}
+            {amount > 50 && amount <= 75 && (
+              <span>
+                Expected time for the dustbin to be full{" "}
+                <strong> {dayjs().add(2, "day").format("DD MMM YYYY")}</strong>
+              </span>
+            )}
+            {amount > 75 && amount <= 90 && (
+              <span>Dustbin is almost full </span>
+            )}
+            {amount > 90 && <span>Dustbin is full </span>}
+          </p>
         </>
       ),
-      position: [
-        req.user.locationCoordinates[1],
-        req.user.locationCoordinates[0],
-      ],
+      position: [user.locationCoordinates[1], user.locationCoordinates[0]],
       popupContent: (
         <>
           <input
-            placeholder="Enter quantity in kg"
+            placeholder="Enter vol. of garbage in dustbin"
             type="number"
             style={{
               border: "2px solid black",
               padding: "0.5rem",
             }}
-            id={req.id}
+            id={wasteCollectionId}
           />
 
           <button
@@ -128,9 +210,9 @@ const MapPage = () => {
               color: "#fff",
             }}
             onClick={(e) => {
-              const wasteInput = document.getElementById(req.id);
+              const wasteInput = document.getElementById(wasteCollectionId);
               if (!wasteInput.value) return;
-              updateWasteCollection(req.id, {
+              updateWasteCollection(wasteCollectionId, {
                 status: "COMPLETED",
                 collectionDate: new Date().toISOString(),
                 amount: Number(wasteInput.value),

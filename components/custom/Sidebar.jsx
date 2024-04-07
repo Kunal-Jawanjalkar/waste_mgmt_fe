@@ -68,6 +68,7 @@ export default function Sidebar({ children }) {
                   <span className="text-gray-100">Home</span>
                 </Link>
               </li>
+
               {userData?.role !== "USER" && (
                 <li
                   className={`rounded-sm ${

@@ -41,6 +41,12 @@ const formSchema = z.object({
   wasteTypeId: z.string().min(1, {
     message: "Waste Type is required",
   }),
+  amount: z
+    .string()
+    .transform((value) => parseFloat(value)) // Transform the string to a number
+    .refine((value) => !isNaN(value), { message: "Must be a valid number" }) // Ensure the result is a number
+    .refine((value) => value >= 0, { message: "Value must be 0 or greater" }) // Check for minimum value
+    .refine((value) => value <= 100, { message: "Value must be 100 or less" }),
 });
 const WasteRequestCard = ({
   fetchRecentRequests,
@@ -60,6 +66,7 @@ const WasteRequestCard = ({
     defaultValues: {
       collectionDate: "",
       wasteTypeId: "",
+      amount: "",
     },
   });
 
@@ -71,7 +78,7 @@ const WasteRequestCard = ({
     const payload = {
       ...values,
       collectionDate: new Date(values.collectionDate).toISOString(),
-      amount: 0,
+      amount: values.amount,
       status: "PENDING",
       userId: JSON.parse(userDetails).id,
     };
@@ -141,6 +148,26 @@ const WasteRequestCard = ({
                         type="datetime-local"
                         className="outline-none"
                         placeholder="Enter Collection Date"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Garbage volume in Dustbin (%)</FormLabel>
+                    <FormControl>
+                      <Input
+                        max={100}
+                        type="number"
+                        className="outline-none"
+                        placeholder="Enter Garbage volume in Dustbin (%)"
                         {...field}
                       />
                     </FormControl>

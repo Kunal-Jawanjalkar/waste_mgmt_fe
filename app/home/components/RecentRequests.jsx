@@ -26,13 +26,13 @@ const RecentRequestsTable = ({
     return <Loader2 className="mr-2 h-4 w-4 animate-spin" />;
   }
   return (
-    <>
+    <div className="overflow-auto h-72">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px]">Sr. No.</TableHead>
+          <TableRow className="sticky top-0">
+            <TableHead>Sr. No.</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Quantity (kg)</TableHead>
+            <TableHead>Garbage Volume in Dustbin (%)</TableHead>
             <TableHead>Type</TableHead>
             <TableHead className="text-right">Collection Date</TableHead>
           </TableRow>
@@ -53,7 +53,7 @@ const RecentRequestsTable = ({
           })}
         </TableBody>
       </Table>
-    </>
+    </div>
   );
 };
 
